@@ -14,4 +14,4 @@
 ### 方法一：宿主机一键安装（推荐 Ubuntu / Debian）
 执行以下命令即可自动检测环境、安装依赖并注册 systemd 开机自启：
 ```bash
-bash <(curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)Sparklewink/HomeSocks/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Sparklewink/HomeSocks/main/install.sh)
