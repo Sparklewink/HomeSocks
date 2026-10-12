@@ -1,0 +1,28 @@
+name: Fetch VPN Gate Nodes
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch_and_update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download VPN Gate CSV
+        run: |
+          curl -sL "https://www.vpngate.net/api/iphone/" > nodes.csv
+          
+      - name: Commit and Push
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add nodes.csv
+          # 如果文件有变化则提交
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto sync vpn gate nodes" && git push)
