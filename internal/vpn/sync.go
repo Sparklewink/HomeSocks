@@ -1,7 +1,6 @@
 package vpn
 
 import (
-	"encoding/base64"
 	"encoding/csv"
 	"log"
 	"net/http"
@@ -14,11 +13,11 @@ import (
 
 type Node struct {
 	IP          string `json:"ip"`
-	Country     string `json:"country"` 
+	Country     string `json:"country"`
 	Ping        string `json:"ping"`
 	Speed       string `json:"speed"`
 	OvpnBase64  string `json:"-"` 
-	Delay       int    `json:"delay"`
+	Delay       int    `json:"delay"` 
 	IsAvailable bool   `json:"is_available"`
 }
 
@@ -69,11 +68,9 @@ func syncNodes() {
 		countryShort := row[6]
 		operator := row[12]
 		ovpnBase64 := row[14]
-
 		if strings.HasPrefix(hostName, "*") || strings.HasPrefix(hostName, "#") {
 			continue
 		}
-
 		lowerOp := strings.ToLower(operator)
 		lowerHost := strings.ToLower(hostName)
 		if strings.Contains(lowerOp, "public-vpn") || strings.Contains(lowerHost, "public-vpn") {
