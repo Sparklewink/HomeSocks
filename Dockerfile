@@ -2,6 +2,7 @@
 FROM golang:1.21-alpine AS builder
 WORKDIR /app
 COPY . .
+RUN go mod tidy
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o homesocks ./cmd/homesocks
 FROM alpine:latest
 RUN apk add --no-cache iproute2 iptables openvpn curl tzdata ca-certificates
