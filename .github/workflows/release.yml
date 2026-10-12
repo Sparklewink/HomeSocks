@@ -9,8 +9,10 @@ jobs:
   build:
     name: Build Go Binaries
     runs-on: ubuntu-latest
-  permissions:
+    
+    permissions:
       contents: write
+      
     strategy:
       matrix:
         goos: [linux]
@@ -31,8 +33,8 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          go mod tidy
           mkdir -p build
+          go mod tidy
           go build -ldflags="-s -w" -o build/homesocks-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/homesocks
 
       - name: Upload Release Asset
