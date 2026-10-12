@@ -29,6 +29,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
+          go mod tidy
           mkdir -p build
           go build -ldflags="-s -w" -o build/homesocks-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/homesocks
 
