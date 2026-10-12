@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeSocks 控制面板</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <h2>HomeSocks</h2>
+            <p>请输入面板口令以继续</p>
+            <input type="password" id="pwd-input" placeholder="Password">
+            <button onclick="login()">登 录</button>
+        </div>
+    </div>
+
+    <div id="app" style="display: none;">
+        <header>
+            <h1>HomeSocks Dashboard</h1>
+            <div class="controls">
+                <button id="btn-master" onclick="doAction('toggle_master')">总开关: -</button>
+                <button id="btn-route" onclick="doAction('toggle_routing')">模式: -</button>
+            </div>
+        </header>
+
+        <main>
+            <section class="card status-card">
+                <h3>当前出口状态</h3>
+                <div class="info-grid">
+                    <div><span>SOCKS5 端口:</span> <b id="ui-port">-</b></div>
+                    <div><span>真连接延迟:</span> <b id="ui-delay" class="delay">- ms</b></div>
+                    <div><span>当前节点 IP:</span> <b id="ui-ip">-</b></div>
+                    <div><span>选路策略:</span> <b id="ui-mode">-</b></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h3>家宽候选节点</h3>
+                    <button class="btn-auto" onclick="doAction('set_auto')">开启自动智能切换</button>
+                </div>
+                <div id="node-list" class="node-list">
+                    <p>加载中...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

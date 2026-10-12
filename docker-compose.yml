@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  homesocks:
+    image: ghcr.io/sparklewink/homesocks:latest
+    container_name: homesocks
+    restart: unless-stopped
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "8899:8899" # Web 面板
+      - "1080:1080" # SOCKS5 端口
+    volumes:
+      - ./config:/etc/homesocks
+    environment:
+      - TZ=Asia/Shanghai
