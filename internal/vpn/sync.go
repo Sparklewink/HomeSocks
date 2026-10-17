@@ -50,7 +50,8 @@ func syncNodes() {
 	defer resp.Body.Close()
 
 	reader := csv.NewReader(resp.Body)
-	reader.FieldsPerRecord = -1 
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
 
 	records, err := reader.ReadAll()
 	if err != nil {
