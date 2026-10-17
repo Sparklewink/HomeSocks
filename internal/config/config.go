@@ -16,7 +16,7 @@ type Config struct {
 	SocksPort           int       `json:"socks_port"`
 	SocksListen         string    `json:"socks_listen"`
 	SocksAuth           SocksAuth `json:"socks_auth"`
-	HealthCheckInterval int       `json:"health_check_interval"` // 秒
+	HealthCheckInterval int       `json:"health_check_interval"`
 	NodeSync            NodeSync  `json:"node_sync"`
 }
 
@@ -32,11 +32,12 @@ type NodeSync struct {
 }
 
 type State struct {
-	MasterSwitch    bool   `json:"master_switch"`
-	RoutingMode     string `json:"routing_mode"` 
-	NodeSelectMode  string `json:"node_select_mode"`
-	AutoTestEnabled bool   `json:"auto_test_enabled"`
-	CurrentNodeIP   string `json:"current_node_ip"`
+	MasterSwitch      bool     `json:"master_switch"`
+	RoutingMode       string   `json:"routing_mode"`     // "route" 或 "direct"
+	NodeSelectMode    string   `json:"node_select_mode"` // "auto" 或 "manual"
+	AutoTestEnabled   bool     `json:"auto_test_enabled"`
+	CurrentNodeIP     string   `json:"current_node_ip"`
+	PriorityCountries []string `json:"priority_countries"` // 自动模式下的国家优先级，如 ["JP", "KR", "US"]
 }
 
 var (
@@ -48,6 +49,7 @@ var (
 
 func Init(path string) error {
 	configDir = filepath.Dir(path)
+
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -58,11 +60,13 @@ func Init(path string) error {
 
 	statePath := filepath.Join(configDir, "state.json")
 	if _, err := os.Stat(statePath); os.IsNotExist(err) {
+		// 初始化默认状态
 		GlobalState = State{
-			MasterSwitch:    true,
-			RoutingMode:     "route",
-			NodeSelectMode:  "auto",
-			AutoTestEnabled: true,
+			MasterSwitch:      true,
+			RoutingMode:       "route",
+			NodeSelectMode:    "auto",
+			AutoTestEnabled:   true,
+			PriorityCountries: []string{"JP", "KR", "US"}, // 默认优先国家
 		}
 		SaveState()
 	} else {
@@ -70,7 +74,7 @@ func Init(path string) error {
 		json.Unmarshal(sData, &GlobalState)
 	}
 
-	log.Printf("Config loaded: PanelPort=%d, RoutingMode=%s", GlobalConfig.PanelPort, GlobalState.RoutingMode)
+	log.Printf("Config loaded: PanelPort=%d, Mode=%s, Priority=%v", GlobalConfig.PanelPort, GlobalState.NodeSelectMode, GlobalState.PriorityCountries)
 	return nil
 }
 

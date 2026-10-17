@@ -1,7 +1,7 @@
 const API_BASE = window.location.pathname.replace(/\/$/, '') + '/api';
 let token = localStorage.getItem('hs_token') || '';
+let globalNodes = [];
 
-// 初始化
 if (!token) {
     document.getElementById('login-modal').style.display = 'flex';
 } else {
@@ -9,7 +9,7 @@ if (!token) {
     document.getElementById('app').style.display = 'block';
     fetchStatus();
     fetchNodes();
-    setInterval(fetchStatus, 3000); // 每3秒刷新状态
+    setInterval(fetchStatus, 3000);
 }
 
 function login() {
@@ -44,7 +44,18 @@ async function fetchStatus() {
 
         document.getElementById('ui-port').textContent = c.socks_port + (c.socks_auth ? ' (需密码)' : '');
         document.getElementById('ui-ip').textContent = s.current_node_ip || '未分配';
-        document.getElementById('ui-mode').textContent = s.node_select_mode === 'auto' ? '🤖 自动探测最低延迟' : '✋ 手动固定';
+        
+        const modeUI = document.getElementById('ui-mode');
+        if (s.node_select_mode === 'auto') {
+            modeUI.innerHTML = '<span style="color:#2196f3;">🤖 自动寻优</span>';
+        } else {
+            modeUI.innerHTML = '<span style="color:#f44336;">🔒 手动锁定</span> (后台不再切换)';
+        }
+
+        const priInput = document.getElementById('priority-input');
+        if (document.activeElement !== priInput && s.priority_countries) {
+            priInput.value = s.priority_countries.join(', ');
+        }
         
         const dUI = document.getElementById('ui-delay');
         if (s.routing_mode === 'direct') {
@@ -55,40 +66,70 @@ async function fetchStatus() {
         }
     } catch (e) { console.error(e); }
 }
+
 async function fetchNodes() {
     try {
-        const nodes = await apiCall('/nodes');
-        const sData = await apiCall('/status');
-        const currentIP = sData.state.current_node_ip;
-
-        const list = document.getElementById('node-list');
-        list.innerHTML = '';
-
-        if (nodes.length === 0) {
-            list.innerHTML = '<p>尚未拉取到可用节点，请等待后台 Action 同步...</p>';
-            return;
-        }
-
-        nodes.forEach(n => {
-            const div = document.createElement('div');
-            div.className = `node-item ${n.ip === currentIP ? 'current' : ''}`;
-            
-            div.innerHTML = `
-                <div class="node-info">
-                    <span class="country-badge">${n.country}</span>
-                    <b>${n.ip}</b>
-                    <span style="font-size:12px; color:#aaa; margin-left:10px;">(宣称 Ping: ${n.ping}ms | 速度: ${n.speed})</span>
-                </div>
-                <div class="node-actions">
-                    <span id="delay-${n.ip.replace(/\./g, '-')}" style="font-size:12px; color:#ff9800; margin-right:10px;"></span>
-                    <button onclick="testNode('${n.ip}')">⚡ 测真连</button>
-                    <button class="${n.ip === currentIP ? 'active' : ''}" onclick="selectNode('${n.ip}')">📍 使用</button>
-                </div>
-            `;
-            list.appendChild(div);
-        });
+        globalNodes = await apiCall('/nodes');
+        updateCountryFilter();
+        renderNodes();
     } catch (e) { console.error(e); }
 }
+
+function updateCountryFilter() {
+    const filter = document.getElementById('country-filter');
+    const currentVal = filter.value;
+    
+    const countries = [...new Set(globalNodes.map(n => n.country))].sort();
+    
+    let html = '<option value="ALL">全部国家</option>';
+    countries.forEach(c => {
+        html += `<option value="${c}">${c}</option>`;
+    });
+    
+    filter.innerHTML = html;
+    if (countries.includes(currentVal) || currentVal === 'ALL') {
+        filter.value = currentVal;
+    }
+}
+
+async function renderNodes() {
+    const sData = await apiCall('/status');
+    const currentIP = sData.state.current_node_ip;
+    const selectedCountry = document.getElementById('country-filter').value;
+
+    const list = document.getElementById('node-list');
+    list.innerHTML = '';
+
+    if (globalNodes.length === 0) {
+        list.innerHTML = '<p>尚未拉取到可用节点，请等待后台 Action 同步...</p>';
+        return;
+    }
+
+    let displayNodes = globalNodes;
+    if (selectedCountry !== 'ALL') {
+        displayNodes = globalNodes.filter(n => n.country === selectedCountry);
+    }
+
+    displayNodes.forEach(n => {
+        const div = document.createElement('div');
+        div.className = `node-item ${n.ip === currentIP ? 'current' : ''}`;
+        
+        div.innerHTML = `
+            <div class="node-info">
+                <span class="country-badge">${n.country}</span>
+                <b>${n.ip}</b>
+                <span style="font-size:12px; color:#aaa; margin-left:10px;">(宣称 Ping: ${n.ping}ms | 速度: ${n.speed})</span>
+            </div>
+            <div class="node-actions">
+                <span id="delay-${n.ip.replace(/\./g, '-')}" style="font-size:12px; color:#ff9800; margin-right:10px;"></span>
+                <button onclick="testNode('${n.ip}')">⚡ 测真连</button>
+                <button class="${n.ip === currentIP ? 'active' : ''}" onclick="selectNode('${n.ip}')">📍 锁定</button>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
 async function doAction(act) {
     await apiCall('/action', {
         method: 'POST',
@@ -96,18 +137,29 @@ async function doAction(act) {
     });
     fetchStatus();
     if(act === 'set_auto') {
-        alert('已开启自动模式，后台将持续寻找最快节点！');
+        alert('已解除锁定，开启自动寻优！后台将按国家优先级切换最快节点。');
         fetchNodes();
     }
 }
+
+async function updatePriority() {
+    const pStr = document.getElementById('priority-input').value;
+    await apiCall('/action', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'update_priority', priority: pStr })
+    });
+    fetchStatus();
+}
+
 async function selectNode(ip) {
     await apiCall('/action', {
         method: 'POST',
         body: JSON.stringify({ action: 'set_manual', ip: ip })
     });
     fetchStatus();
-    fetchNodes();
+    renderNodes();
 }
+
 async function testNode(ip) {
     const delayUI = document.getElementById(`delay-${ip.replace(/\./g, '-')}`);
     delayUI.textContent = '测试中...';

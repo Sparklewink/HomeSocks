@@ -16,17 +16,20 @@ import (
 func StartWebServer() {
 	cfg := config.GlobalConfig
 	mux := http.NewServeMux()
-	
+
 	prefix := cfg.PanelPath
 	if !strings.HasPrefix(prefix, "/") {
 		prefix = "/" + prefix
 	}
+
 	fileServer := http.FileServer(http.FS(web.FS))
 	mux.Handle(prefix+"/", http.StripPrefix(prefix, fileServer))
+
 	mux.Handle(prefix+"/api/status", authMiddleware(http.HandlerFunc(statusHandler)))
 	mux.Handle(prefix+"/api/nodes", authMiddleware(http.HandlerFunc(nodesHandler)))
 	mux.Handle(prefix+"/api/action", authMiddleware(http.HandlerFunc(actionHandler)))
 	mux.Handle(prefix+"/api/test", authMiddleware(http.HandlerFunc(testHandler)))
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	})
@@ -37,6 +40,7 @@ func StartWebServer() {
 		log.Fatalf("[Web] Server failed: %v", err)
 	}
 }
+
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
@@ -52,7 +56,7 @@ func authMiddleware(next http.Handler) http.Handler {
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	state := config.GetState()
 	cfg := config.GlobalConfig
-	
+
 	resp := map[string]interface{}{
 		"state": state,
 		"config": map[string]interface{}{
@@ -67,7 +71,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 func nodesHandler(w http.ResponseWriter, r *http.Request) {
 	nodes := vpn.GetNodes()
 	for i := range nodes {
-		nodes[i].OvpnBase64 = ""
+		nodes[i].OvpnBase64 = "" 
 	}
 	json.NewEncoder(w).Encode(nodes)
 }
@@ -75,7 +79,7 @@ func nodesHandler(w http.ResponseWriter, r *http.Request) {
 func actionHandler(w http.ResponseWriter, r *http.Request) {
 	var req map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&req)
-	
+
 	action, _ := req["action"].(string)
 
 	config.UpdateState(func(s *config.State) {
@@ -103,9 +107,20 @@ func actionHandler(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
+		case "update_priority":
+			pStr, _ := req["priority"].(string)
+			parts := strings.Split(pStr, ",")
+			var clean []string
+			for _, p := range parts {
+				trimP := strings.ToUpper(strings.TrimSpace(p))
+				if trimP != "" {
+					clean = append(clean, trimP)
+				}
+			}
+			s.PriorityCountries = clean
 		}
 	})
-	
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -128,10 +143,11 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Node not found", 404)
 		return
 	}
+
 	delay, ok := health.TestNodeRealConnection(targetNode)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ip": targetIP,
+		"ip":    targetIP,
 		"delay": delay,
-		"ok": ok,
+		"ok":    ok,
 	})
 }

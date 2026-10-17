@@ -36,10 +36,25 @@
                 </div>
             </section>
 
+            <section class="card priority-card">
+                <div class="card-header" style="border:none; padding-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 14px; color: #aaa;">自动寻优国家优先级 (如 JP, KR, US):</span>
+                        <input type="text" id="priority-input" placeholder="JP, KR" style="margin:0; width:150px; padding: 6px;">
+                        <button onclick="updatePriority()" style="padding: 6px 12px;">保存</button>
+                    </div>
+                </div>
+            </section>
+
             <section class="card">
                 <div class="card-header">
                     <h3>家宽候选节点</h3>
-                    <button class="btn-auto" onclick="doAction('set_auto')">开启自动智能切换</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="country-filter" onchange="renderNodes()">
+                            <option value="ALL">全部国家</option>
+                        </select>
+                        <button class="btn-auto" onclick="doAction('set_auto')">开启自动寻优</button>
+                    </div>
                 </div>
                 <div id="node-list" class="node-list">
                     <p>加载中...</p>
